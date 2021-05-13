@@ -1,35 +1,41 @@
 import asyncio
 import requests
 import websockets
+from random import randint
 
 SERVER = 'freezerpi:12101'
-
-
-from random import randint
 
 
 def get_problem(difficulty):
     a = randint(1, difficulty)
     b = randint(1, difficulty)
-    return str(a) + " plus " + str(b)
+    problem = "Was gibt " + str(a) + " plus " + str(b)
+    expected = a + b
+    return problem, expected
 
 
-def wait_for_answer():
-    url = 'http://' + SERVER + '/api/listen-for-command'
-    response = requests.post(url)
+def wait_for_response():
+    url = 'http://' + SERVER + '/api/listen-for-command?timeout=20'
+    return requests.post(url).json()
 
-    uri_ws = 'ws://' + SERVER + '/api/events/intent'
-    with websockets.connect(uri_ws) as websocket:
-        data = websocket.recv()
-        print(data)
+
+def extract_intent(response):
+    intent = response['intent']['name']
+    return intent
+
+
+def extract_answer(response):
+    return response['entities'][0]['value']
 
 
 def review(answer, expected):
     pass
 
+
 def praise(answer):
     s = "Sehr gut, " + str(answer) + " ist richtig"
     say(s)
+
 
 def dispraise(answer):
     s = str(answer) + " ist leider falsch, versuch es noch einmal"
@@ -46,36 +52,38 @@ def say(s):
 
 
 def main():
-
     is_running = True
     difficulty = 5
 
+    (problem, expected) = get_problem(difficulty)
+
     while is_running:
-        (problem, expected) = get_problem(difficulty)
         say(problem)
-        (intent, answer) = wait_for_answer()
+        response = wait_for_response()
+        intent = extract_intent(response)
 
-        if intent == 'result':
-            is_correct = review(answer, expected)
+        if intent == 'CalcAnswer':
+            answer = extract_answer(response)
 
-            if is_correct:
+            if answer == expected:
                 praise(answer)
                 (problem, expected) = get_problem(difficulty)
 
             else:
                 dispraise(answer)
 
-        elif intent == 'more difficult':
+        elif intent == 'CalcMoreDifficult':
             difficulty += 2
+            (problem, expected) = get_problem(difficulty)
 
-        elif intent == 'easier':
+        elif intent == 'CalcEasier':
             if difficulty > 2:
                 difficulty -= 2
+                (problem, expected) = get_problem(difficulty)
 
-        elif intent == 'done':
+        elif intent == 'CalcExit':
             goodbye()
             is_running = False
 
 
 main()
-
