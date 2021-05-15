@@ -1,6 +1,7 @@
 import asyncio
 import requests
 import websockets
+import json
 from random import randint
 
 SERVER = 'freezerpi:12101'
@@ -15,7 +16,7 @@ def get_problem(difficulty):
 
 
 def wait_for_response():
-    url = 'http://' + SERVER + '/api/listen-for-command?timeout=20'
+    url = 'http://' + SERVER + '/api/listen-for-command?timeout=20?nohass=true'
     return requests.post(url).json()
 
 
@@ -51,7 +52,21 @@ def say(s):
     requests.post(url, s)
 
 
-def main():
+async def start():
+    uri = 'ws://' + SERVER + "/api/events/intent"
+
+    async with websockets.connect(uri) as websocket:
+        print(f"waiting for command on {uri}", flush=True)
+        while True:
+            data = await websocket.recv()
+            intent = extract_intent(json.loads(data))
+            if intent == "CalcStart":
+                run_game()
+
+
+def run_game():
+    print("start game")
+    say("Willkommen zum Rechenspiel")
     is_running = True
     difficulty = 5
 
@@ -84,6 +99,11 @@ def main():
         elif intent == 'CalcExit':
             goodbye()
             is_running = False
+
+
+def main():
+    print("client started", flush=True)
+    asyncio.get_event_loop().run_until_complete(start())
 
 
 main()
