@@ -46,7 +46,7 @@ def say(uri, s):
 
 
 def get_server():
-    server = os.environ.get('SERVER')
+    server = os.environ.get('RHASSPY_URI')
     uri_intent = 'ws://' + server + "/api/events/intent"
     uri_tts = 'http://' + server + '/api/text-to-speech'
     uri_command = 'http://' + server + '/api/listen-for-command?timeout=20?nohass=true'

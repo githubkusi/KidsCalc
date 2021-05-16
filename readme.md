@@ -6,11 +6,11 @@ Calculation trainer for [Rhasspy](https://rhasspy.readthedocs.io/) voice automat
 
 You
 > \<RHASSPY WAKEWORD\>
-Rechnen
+> Rechnen
 
 Rhasspy
 > Willkommen zum Rechentrainer
-Was gibt 3 + 4
+> Was gibt 3 + 4
 
 You
 > 7
@@ -21,15 +21,17 @@ Rhasspy
 ## Installation
 
     docker build -t kids-calc .    
-	docker run -it kids-calc
+    docker run -e RHASSPY_URI=my-rhasspy:12101 -it kids-calc
+
+Replace *my-rhasspy* with your Rhasspy instance    
 ## Setup
-This service expects a running Rhasspy instance in the same network. It listens for intents on 
+This service listens for intents on 
 
-    ws://localhost:12101/api/events/intent
-   
-The following sentences need to be trained in Rhasspy
+    ws://RHASSPY_URI/api/events/intent
 
-    [CalcStart]
+The following intents/sentences need to be trained in Rhasspy
+
+   [CalcStart]
 	Rechnen
 
 	[CalcAnswer]
@@ -46,4 +48,4 @@ The following sentences need to be trained in Rhasspy
 
 Audio output is sent
 
-    http://localhost:12101/api/text-to-speech
+    http://RHASSPY_URI/api/text-to-speech
