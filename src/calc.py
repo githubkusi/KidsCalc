@@ -2,9 +2,8 @@ import asyncio
 import requests
 import websockets
 import json
+import os
 from random import randint
-
-SERVER = 'freezerpi:12101'
 
 
 def get_problem(difficulty):
@@ -15,9 +14,8 @@ def get_problem(difficulty):
     return problem, expected
 
 
-def wait_for_response():
-    url = 'http://' + SERVER + '/api/listen-for-command?timeout=20?nohass=true'
-    return requests.post(url).json()
+def wait_for_response(uri):
+    return requests.post(uri).json()
 
 
 def extract_intent(response):
@@ -29,63 +27,66 @@ def extract_answer(response):
     return response['entities'][0]['value']
 
 
-def review(answer, expected):
-    pass
-
-
-def praise(answer):
+def praise(uri, answer):
     s = "Sehr gut, " + str(answer) + " ist richtig"
-    say(s)
+    say(uri, s)
 
 
-def dispraise(answer):
+def dispraise(uri, answer):
     s = str(answer) + " ist leider falsch, versuch es noch einmal"
-    say(s)
+    say(uri, s)
 
 
-def goodbye():
-    say('Danke und auf wiedersehen')
+def goodbye(uri):
+    say(uri, 'Danke und auf wiedersehen')
 
 
-def say(s):
-    url = 'http://' + SERVER + '/api/text-to-speech'
-    requests.post(url, s)
+def say(uri, s):
+    requests.post(uri, s)
+
+
+def get_server():
+    server = os.environ.get('SERVER') or 'localhost'
+    uri_intent = 'ws://' + server + "/api/events/intent"
+    uri_tts = 'http://' + server + '/api/text-to-speech'
+    uri_command = 'http://' + server + '/api/listen-for-command?timeout=20?nohass=true'
+    return uri_intent, uri_tts, uri_command
 
 
 async def start():
-    uri = 'ws://' + SERVER + "/api/events/intent"
+    uri_intent, uri_tts, uri_command = get_server()
 
-    async with websockets.connect(uri) as websocket:
-        print(f"waiting for command on {uri}", flush=True)
+    async with websockets.connect(uri_intent) as websocket:
+        print(f"waiting for command on {uri_intent}", flush=True)
         while True:
             data = await websocket.recv()
             intent = extract_intent(json.loads(data))
             if intent == "CalcStart":
-                run_game()
+                run_game(uri_tts, uri_command)
 
 
-def run_game():
+def run_game(uri_tts, uri_command):
     print("start game")
-    say("Willkommen zum Rechenspiel")
+    say(uri_tts, "Willkommen zum Rechenspiel")
     is_running = True
     difficulty = 5
 
     (problem, expected) = get_problem(difficulty)
 
     while is_running:
-        say(problem)
-        response = wait_for_response()
+        say(uri_tts, problem)
+        response = wait_for_response(uri_command)
         intent = extract_intent(response)
 
         if intent == 'CalcAnswer':
             answer = extract_answer(response)
 
             if answer == expected:
-                praise(answer)
+                praise(uri_tts, answer)
                 (problem, expected) = get_problem(difficulty)
 
             else:
-                dispraise(answer)
+                dispraise(uri_tts, answer)
 
         elif intent == 'CalcMoreDifficult':
             difficulty += 2
@@ -97,7 +98,7 @@ def run_game():
                 (problem, expected) = get_problem(difficulty)
 
         elif intent == 'CalcExit':
-            goodbye()
+            goodbye(uri_tts)
             is_running = False
 
 
