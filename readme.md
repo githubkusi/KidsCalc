@@ -31,20 +31,20 @@ This service listens for intents on
 
 The following intents/sentences need to be trained in Rhasspy
 
-   [CalcStart]
-	Rechnen
+    [CalcStart]
+    Rechnen
 
-	[CalcAnswer]
-	(0..100){result!int}
+    [CalcAnswer]
+    (0..100){result!int}
 
-	[CalcEasier]
-	einfacher
+    [CalcEasier]
+    einfacher
 
-	[CalcMoreDifficult]
-	schwieriger
+    [CalcMoreDifficult]
+    schwieriger
 
-	[CalcExit]
-	fertig
+    [CalcExit]
+    fertig
 
 Audio output is sent
 
